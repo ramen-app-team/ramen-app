@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Django バックエンドサービス
   backend:
@@ -33,7 +31,7 @@ services:
     build:
       context: ./frontend # frontendディレクトリのDockerfileを使用
       dockerfile: Dockerfile
-    command: npm run start
+    command: pnpm expo start
     volumes:
       - ./frontend:/app # ホストのfrontendディレクトリをコンテナの/appにマウント
       - /app/node_modules # node_modulesはホストからマウントしない（コンテナ内でインストール）

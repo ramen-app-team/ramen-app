@@ -40,3 +40,4 @@ app-example
 
 # dotenv
 .env.keys
+.env
