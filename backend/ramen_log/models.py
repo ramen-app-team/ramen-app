@@ -1,0 +1,12 @@
+from django.db import models
+
+class RamenLog(models.Model):
+    shop_name = models.CharField(max_length=100)
+    user_name = models.CharField(max_length=50)
+    ordered_item = models.CharField(max_length=100, blank=True, null=True)  # 空OK
+    noodle_hardness = models.CharField(max_length=30, blank=True, null=True) # 空OK
+    toppings = models.CharField(max_length=200, blank=True, null=True)       # 空OK
+    rating = models.DecimalField(max_digits=3, decimal_places=1, blank=True, null=True)  # 空OK
+    visited_at = models.DateTimeField(null=True, blank=True, default=None)
+    def __str__(self):
+        return f"{self.shop_name} - {self.user_name} ({self.visited_at.date()})"
