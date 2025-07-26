@@ -22,6 +22,7 @@ import {
   IconButton,
 } from "react-native-paper";
 import { useLocalSearchParams, router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -61,9 +62,29 @@ export default function ReviewScreen() {
 
   // 空のAPI関数（後で実装）
   const takePhoto = async () => {
-    // TODO: カメラ機能実装
-    console.log("写真撮影");
-    Alert.alert("写真撮影", "カメラ機能は後で実装予定");
+    // カメラの権限をリクエスト
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("カメラのアクセスが許可されていません");
+      return;
+    }
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setPhotoUri(result.assets[0].uri);
+      } else if (result.canceled) {
+        // キャンセル時は何もしない
+      } else {
+        Alert.alert("写真の取得に失敗しました");
+      }
+    } catch (error) {
+      Alert.alert("エラー", "カメラの起動に失敗しました");
+    }
   };
 
   const selectPhotoFromGallery = async () => {
