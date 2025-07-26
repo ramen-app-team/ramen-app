@@ -37,6 +37,33 @@ interface RestaurantInfo {
   photoUrl?: string;
 }
 
+// ユーザー情報の型定義
+interface UserInfo {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+// レビューデータの型定義
+interface ReviewData {
+  id?: string;
+  restaurantId: string;
+  restaurantName: string;
+  userId: string;
+  userName: string;
+  menu: string;
+  rating: number;
+  noodleHardness: string;
+  soupRichness: string;
+  review: string;
+  photo: string;
+  // 投稿日時(どっちか好みの形式で)
+  createdAt: Date;
+  createdDate: string; // YYYY-MM-DD形式
+  createdTime: string; // HH:MM形式
+}
+
 export default function ReviewScreen() {
   // 本来はマップから取得
   // const params = useLocalSearchParams();
@@ -63,6 +90,17 @@ export default function ReviewScreen() {
     photoUrl: (params.photoUrl as string) || "",
   };
 
+  // ユーザー情報(どっかから取得する)
+  const isLoggedIn = true;
+  const userInfo = {
+    id: "user_001",
+    name: "ラーメン大好き",
+    email: "ramen@example.com",
+    avatar:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
+  };
+
+  // レビュー情報
   const [menuName, setMenuName] = useState("");
   const [rating, setRating] = useState(5);
   const [noodleHardness, setNoodleHardness] = useState<string>("");
@@ -110,6 +148,15 @@ export default function ReviewScreen() {
   };
 
   const submitReview = async () => {
+    if (!isLoggedIn || !userInfo) {
+      console.log("ログインが必要");
+      Alert.alert(
+        "ログインが必要",
+        "レビューを投稿するにはログインしてください"
+      );
+      return;
+    }
+
     if (!menuName) {
       Alert.alert("メニュー名を入力してください");
       return;
@@ -117,17 +164,31 @@ export default function ReviewScreen() {
 
     setIsSubmitting(true);
     try {
-      // TODO: レビュー投稿API実装
-      console.log("レビュー投稿:", {
+      // レビューデータを作成
+      const now = new Date();
+      const reviewData: ReviewData = {
         restaurantId: restaurantInfo.id,
         restaurantName: restaurantInfo.name,
+        userId: userInfo.id,
+        userName: userInfo.name,
         menu: menuName,
         rating,
         noodleHardness,
         soupRichness,
         review,
         photo: photoUri,
-      });
+        createdAt: now,
+        createdDate: `${now.getFullYear()}年${
+          now.getMonth() + 1
+        }月${now.getDate()}日`, // 日本語形式
+        createdTime: `${now.getHours().toString().padStart(2, "0")}:${now
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`, // HH:MM形式
+      };
+
+      // TODO: レビュー投稿API実装
+      console.log("レビュー投稿:", reviewData);
 
       Alert.alert("成功", "レビューを投稿しました！");
       // フォームをリセット
