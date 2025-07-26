@@ -23,6 +23,7 @@ const MAPPING = {
   "chevron.right": "chevron-right",
   star: "star-border",
   "star.fill": "star",
+  "book.fill": "book",
 } as IconMapping;
 
 /**
