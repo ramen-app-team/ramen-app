@@ -1,16 +1,24 @@
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.response import Response
 from .models import RamenLog
 from .serializers import RamenLogSerializer
 from .nulldata import default_ramen_log
 
 class RamenLogListCreateAPIView(generics.ListCreateAPIView):
-    queryset = RamenLog.objects.all().order_by('-visited_at')
     serializer_class = RamenLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """認証されたユーザーのログのみを返す"""
+        return RamenLog.objects.filter(user=self.request.user).order_by('-visited_at')
+
+    def perform_create(self, serializer):
+        """ログ作成時にリクエストユーザーを自動で割り当てる"""
+        serializer.save(user=self.request.user)
 
 class RamenLogRetrieveAPIView(generics.RetrieveAPIView):
-    queryset = RamenLog.objects.all()
     serializer_class = RamenLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -22,5 +30,9 @@ class RamenLogRetrieveAPIView(generics.RetrieveAPIView):
 
 # 追加：削除用ビュー
 class RamenLogDestroyAPIView(generics.DestroyAPIView):
-    queryset = RamenLog.objects.all()
     serializer_class = RamenLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """認証されたユーザーのログのみを削除可能にする"""
+        return RamenLog.objects.filter(user=self.request.user)

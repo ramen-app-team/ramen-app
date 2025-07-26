@@ -10,8 +10,8 @@ class UserRelationshipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserRelationship
-        fields = ['id', 'follower', 'followed', 'created_at']
-        read_only_fields = ['follower', 'created_at'] # followerはリクエストからは受け取らない
+        fields = ['id', 'follower', 'followed', 'status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'follower', 'status', 'created_at', 'updated_at']
 
 class FollowRequestSerializer(serializers.Serializer):
     """フォローリクエスト用のシリアライザ (フォローするユーザーIDのみを受け取る)"""
