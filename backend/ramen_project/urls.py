@@ -20,4 +20,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),  # ユーザー関連のAPIを含む
+    path('api/', include('ramen_log.urls')), # ramen_logのAPIを含む
 ]

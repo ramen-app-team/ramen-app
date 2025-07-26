@@ -9,4 +9,5 @@ class RamenLog(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=1, blank=True, null=True)  # 空OK
     visited_at = models.DateTimeField(null=True, blank=True, default=None)
     def __str__(self):
-        return f"{self.shop_name} - {self.user_name} ({self.visited_at.date()})"
+        visited_date_str = self.visited_at.date() if self.visited_at else "訪問日未登録"
+        return f"{self.shop_name} - {self.user_name} ({visited_date_str})"

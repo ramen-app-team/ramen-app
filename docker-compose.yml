@@ -1,4 +1,3 @@
-version: '3.8' # この警告は無視してOK
 
 services:
   # Django バックエンドサービス
