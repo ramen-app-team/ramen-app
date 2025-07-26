@@ -1,37 +1,65 @@
 import {
   StyleSheet,
-  Text,
   View,
   Platform,
   ScrollView,
-  TouchableOpacity,
-  TextInput,
   Alert,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import {
+  TextInput as PaperTextInput,
+  Button,
+  Card,
+  Surface,
+  useTheme,
+  Chip,
+  IconButton,
+} from "react-native-paper";
+import { useLocalSearchParams, router } from "expo-router";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get("window");
+
+// レストラン情報の型定義(仮)
+interface RestaurantInfo {
+  id: string;
+  name: string;
+  address?: string;
+  rating?: number;
+  priceLevel?: string;
+  photoUrl?: string;
+}
 
 export default function ReviewScreen() {
-  const [selectedRestaurant, setSelectedRestaurant] = useState("");
+  const params = useLocalSearchParams();
+  const restaurantInfo: RestaurantInfo = {
+    id: (params.id as string) || "",
+    name: (params.name as string) || "",
+    address: (params.address as string) || "",
+    rating: params.rating ? parseFloat(params.rating as string) : undefined,
+    priceLevel: (params.priceLevel as string) || "",
+    photoUrl: (params.photoUrl as string) || "",
+  };
+
   const [menuName, setMenuName] = useState("");
   const [rating, setRating] = useState(5);
+  const [noodleHardness, setNoodleHardness] = useState<string>("");
+  const [soupRichness, setSoupRichness] = useState<string>("");
   const [review, setReview] = useState("");
   const [photoUri, setPhotoUri] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const theme = useTheme();
 
-  // 空のAPI関数（後で実装）
-  const searchRestaurants = async (query: string) => {
-    // TODO: 店舗検索API実装
-    console.log("店舗検索:", query);
-    return [];
+  const handleClose = () => {
+    router.back();
   };
 
+  // 空のAPI関数（後で実装）
   const takePhoto = async () => {
     // TODO: カメラ機能実装
     console.log("写真撮影");
@@ -45,8 +73,8 @@ export default function ReviewScreen() {
   };
 
   const submitReview = async () => {
-    if (!selectedRestaurant || !menuName) {
-      Alert.alert("エラー", "店舗名とメニュー名は必須です");
+    if (!menuName) {
+      Alert.alert("メニュー名を入力してください");
       return;
     }
 
@@ -54,18 +82,22 @@ export default function ReviewScreen() {
     try {
       // TODO: レビュー投稿API実装
       console.log("レビュー投稿:", {
-        restaurant: selectedRestaurant,
+        restaurantId: restaurantInfo.id,
+        restaurantName: restaurantInfo.name,
         menu: menuName,
         rating,
+        noodleHardness,
+        soupRichness,
         review,
         photo: photoUri,
       });
 
       Alert.alert("成功", "レビューを投稿しました！");
       // フォームをリセット
-      setSelectedRestaurant("");
       setMenuName("");
       setRating(5);
+      setNoodleHardness("");
+      setSoupRichness("");
       setReview("");
       setPhotoUri("");
     } catch (error) {
@@ -100,116 +132,206 @@ export default function ReviewScreen() {
     );
   };
 
+  const renderNoodleHardness = () => {
+    const options = ["やわめ", "普通", "硬め"];
+    return (
+      <View style={styles.optionContainer}>
+        <ThemedText type="defaultSemiBold" style={styles.subSectionTitle}>
+          麺の硬さ
+        </ThemedText>
+        <View style={styles.buttonGroup}>
+          {options.map((option) => (
+            <Button
+              key={option}
+              mode={noodleHardness === option ? "contained" : "outlined"}
+              onPress={() => setNoodleHardness(option)}
+              style={styles.optionButton}
+              labelStyle={styles.optionButtonLabel}
+            >
+              {option}
+            </Button>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const renderSoupRichness = () => {
+    const options = ["あっさり", "ふつう", "こってり"];
+    return (
+      <View style={styles.optionContainer}>
+        <ThemedText type="defaultSemiBold" style={styles.subSectionTitle}>
+          スープの濃さ
+        </ThemedText>
+        <View style={styles.buttonGroup}>
+          {options.map((option) => (
+            <Button
+              key={option}
+              mode={soupRichness === option ? "contained" : "outlined"}
+              onPress={() => setSoupRichness(option)}
+              style={styles.optionButton}
+              labelStyle={styles.optionButtonLabel}
+            >
+              {option}
+            </Button>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const renderRestaurantInfo = () => {
+    return (
+      <Card style={styles.restaurantCard}>
+        <Card.Content>
+          <ThemedText type="title" style={styles.restaurantName}>
+            {restaurantInfo.name}
+          </ThemedText>
+          {restaurantInfo.address && (
+            <ThemedText style={styles.restaurantAddress}>
+              📍 {restaurantInfo.address}
+            </ThemedText>
+          )}
+          <View style={styles.restaurantChips}>
+            {restaurantInfo.rating && (
+              <Chip icon="star" style={styles.chip}>
+                {restaurantInfo.rating.toFixed(1)}
+              </Chip>
+            )}
+            {restaurantInfo.priceLevel && (
+              <Chip icon="currency-jpy" style={styles.chip}>
+                {restaurantInfo.priceLevel}
+              </Chip>
+            )}
+          </View>
+        </Card.Content>
+      </Card>
+    );
+  };
+
   return (
     <ThemedView style={styles.container}>
       <StatusBar style="auto" />
+
+      {/* ヘッダー */}
+      <View style={styles.header}>
+        <IconButton
+          icon="close"
+          size={24}
+          onPress={handleClose}
+          style={styles.closeButton}
+          iconColor="#333"
+        />
+        <ThemedText type="title" style={styles.headerTitle}>
+          ラーメン記録
+        </ThemedText>
+        <View style={styles.headerSpacer} />
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <ThemedText type="title" style={styles.title}>
-          ラーメン記録
-        </ThemedText>
-
-        {/* 店舗選択 */}
-        <View style={styles.section}>
+        <Surface style={styles.surface} elevation={2}>
+          {/* レストラン情報 */}
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            店舗名 *
+            店名
           </ThemedText>
-          <TextInput
-            style={styles.input}
-            value={selectedRestaurant}
-            onChangeText={setSelectedRestaurant}
-            placeholder="店舗名を入力"
-            placeholderTextColor="#888"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
+          {renderRestaurantInfo()}
 
-        {/* メニュー名 */}
-        <View style={styles.section}>
+          {/* メニュー名 */}
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
             メニュー名 *
           </ThemedText>
-          <TextInput
-            style={styles.input}
+          <PaperTextInput
+            label="入力してください"
             value={menuName}
             onChangeText={setMenuName}
             placeholder="例: 醤油ラーメン"
-            placeholderTextColor="#888"
+            mode="outlined"
+            style={styles.input}
             autoCapitalize="none"
             autoCorrect={false}
+            returnKeyType="next"
           />
-        </View>
 
-        {/* 評価 */}
-        <View style={styles.section}>{renderStarRating()}</View>
+          {/* 評価 */}
+          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+            評価
+          </ThemedText>
+          {renderStarRating()}
 
-        {/* 写真 */}
-        <View style={styles.section}>
+          {/*味の詳細*/}
+          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
+            味の詳細
+          </ThemedText>
+          {renderNoodleHardness()}
+          {renderSoupRichness()}
+
+          {/* 写真 */}
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
             写真
           </ThemedText>
           <View style={styles.photoButtonsContainer}>
-            <TouchableOpacity
-              style={styles.photoButton}
+            <Button
+              mode="outlined"
+              icon="camera"
               onPress={takePhoto}
-              activeOpacity={0.8}
-            >
-              <IconSymbol size={28} name="camera.fill" color="#007AFF" />
-              <ThemedText style={styles.photoButtonText}>撮影</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={styles.photoButton}
-              onPress={selectPhotoFromGallery}
-              activeOpacity={0.8}
+              contentStyle={{ flexDirection: "row-reverse" }}
             >
-              <IconSymbol size={28} name="photo.fill" color="#007AFF" />
-              <ThemedText style={styles.photoButtonText}>選択</ThemedText>
-            </TouchableOpacity>
+              撮影
+            </Button>
+            <Button
+              mode="outlined"
+              icon="image"
+              onPress={selectPhotoFromGallery}
+              style={styles.photoButton}
+              contentStyle={{ flexDirection: "row-reverse" }}
+            >
+              選択
+            </Button>
           </View>
           {photoUri ? (
-            <View style={styles.photoPreview}>
-              <ThemedText>写真が選択されました</ThemedText>
-            </View>
+            <Card style={styles.photoPreview}>
+              <Card.Content>
+                <ThemedText>写真が選択されました</ThemedText>
+              </Card.Content>
+            </Card>
           ) : null}
-        </View>
 
-        {/* 感想 */}
-        <View style={styles.section}>
+          {/* 感想 */}
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
             感想
           </ThemedText>
-          <TextInput
-            style={[styles.input, styles.textArea]}
+          <PaperTextInput
+            label="入力してください(任意)"
             value={review}
             onChangeText={setReview}
             placeholder="ラーメンの感想を書いてください..."
-            placeholderTextColor="#888"
+            mode="outlined"
+            style={[styles.input, styles.textArea]}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
             autoCapitalize="sentences"
           />
-        </View>
 
-        {/* 投稿ボタン */}
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            isSubmitting && styles.submitButtonDisabled,
-          ]}
-          onPress={submitReview}
-          disabled={isSubmitting}
-          activeOpacity={0.8}
-        >
-          <ThemedText style={styles.submitButtonText}>
+          {/* 投稿ボタン */}
+          <Button
+            mode="contained"
+            onPress={submitReview}
+            loading={isSubmitting}
+            disabled={isSubmitting}
+            style={styles.submitButton}
+            contentStyle={{ height: 56 }}
+            labelStyle={{ fontSize: 18, fontWeight: "bold", color: "#fff" }}
+          >
             {isSubmitting ? "投稿中..." : "レビューを投稿"}
-          </ThemedText>
-        </TouchableOpacity>
+          </Button>
+        </Surface>
       </ScrollView>
     </ThemedView>
   );
@@ -220,44 +342,80 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === "ios" ? 50 : 30,
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  closeButton: {
+    margin: 0,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    flex: 1,
+    textAlign: "center",
+  },
+  headerSpacer: {
+    width: 48, // closeButtonと同じ幅
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 100, // タブバーの高さ分余白を追加
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+    alignItems: "center",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 25,
-    textAlign: "center",
+  surface: {
+    width: "100%",
+    maxWidth: 500,
+    borderRadius: 16,
+    padding: 20,
+    backgroundColor: "#fff",
+    marginBottom: 30,
+    elevation: 2,
   },
-  section: {
+  restaurantCard: {
     marginBottom: 20,
+    borderRadius: 12,
+    backgroundColor: "#f8f9fa",
   },
-  sectionTitle: {
-    fontSize: 16,
-    marginBottom: 10,
-    fontWeight: "600",
+  restaurantName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  restaurantAddress: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 12,
+  },
+  restaurantChips: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  chip: {
+    marginRight: 8,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
+    marginBottom: 16,
     backgroundColor: "#fff",
-    minHeight: 50, // タッチしやすい高さ
   },
   textArea: {
-    height: 120,
-    paddingTop: 16,
+    minHeight: 100,
+    paddingTop: 8,
   },
   ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
+    marginBottom: 10,
     justifyContent: "center",
   },
   ratingLabel: {
@@ -270,68 +428,75 @@ const styles = StyleSheet.create({
   },
   starButton: {
     marginHorizontal: 5,
-    padding: 5, // タッチ領域を広げる
+    padding: 5,
+    minWidth: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   ratingText: {
     fontSize: 18,
     fontWeight: "bold",
   },
+  optionContainer: {
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  subSectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 8,
+    color: "#333",
+  },
+  buttonGroup: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  optionButton: {
+    borderRadius: 8,
+    minWidth: 90,
+    paddingHorizontal: 0,
+    flex: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  optionButtonLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+    letterSpacing: 0,
+  },
   photoButtonsContainer: {
     flexDirection: "row",
     gap: 12,
     marginTop: 10,
+    marginBottom: 10,
   },
   photoButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    padding: 16,
-    borderRadius: 12,
     flex: 1,
-    justifyContent: "center",
-    minHeight: 56, // タッチしやすい高さ
-    borderWidth: 1,
-    borderColor: "#e9ecef",
-  },
-  photoButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: "500",
+    marginHorizontal: 2,
+    borderRadius: 8,
   },
   photoPreview: {
     marginTop: 12,
-    padding: 16,
-    backgroundColor: "#f8f9fa",
     borderRadius: 12,
+    backgroundColor: "#f8f9fa",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#e9ecef",
   },
   submitButton: {
-    backgroundColor: "#007AFF",
-    padding: 18,
+    marginTop: 24,
     borderRadius: 12,
-    alignItems: "center",
-    marginTop: 30,
-    marginBottom: 20,
-    minHeight: 56, // タッチしやすい高さ
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    minHeight: 56,
+    justifyContent: "center",
+    elevation: 2,
   },
-  submitButtonDisabled: {
-    backgroundColor: "#ccc",
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  submitButtonText: {
-    color: "#fff",
+  sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
+    marginBottom: 8,
+    marginTop: 16,
+    color: "#333",
   },
 });
