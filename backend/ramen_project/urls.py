@@ -16,9 +16,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/users/', include('users.urls')),  # ユーザー関連のAPIを含む
-    path('api/', include('ramen_log.urls')), # ramen_logのAPIを含む
+
+    # ユーザー関連のAPIを /api/users/ の下に含める
+    path('api/users/', include('users.urls')),
+
+    # ラーメンログ関連のAPIを /api/ramen/ の下に含める
+    path('api/ramen/', include('ramen_log.urls')),
+
+    # フォロー/フォロワー関連のAPIを /api/relationships/ の下に含める
+    path('api/relationships/', include('user_relationships.urls')),
+
+    # DRFの認証URL (simplejwt)
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
