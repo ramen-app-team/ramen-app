@@ -1,116 +1,158 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Platform } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
+import { StyleSheet, View, Text, Dimensions, ImageURISource } from "react-native";
+import MapView, { Marker, Region } from "react-native-maps";
+import * as Location from "expo-location";
+import { Image } from "expo-image";
 
-// MapViewコンポーネントのタイプ定義
-interface MapViewProps {
-  style: any;
-  provider?: any;
-  initialRegion: {
-    latitude: number;
-    longitude: number;
-    latitudeDelta: number;
-    longitudeDelta: number;
-  };
-  children?: React.ReactNode;
+// マーカーのデータ型
+// 経度・緯度の情報と一意キー用のidで構成
+type Marker = {
+  id: number;
+  latitude: number;
+  longitude: number;
+};
+
+type Friend = {
+	id: number,
+	latitude: number,
+	longitude: number,
+	icon: ImageURISource,
 }
 
-export default function App() {
-  const [MapView, setMapView] = useState<any>(null);
-  const [PROVIDER_GOOGLE, setPROVIDER_GOOGLE] = useState<any>(null);
+// マーカー表示用データ
+const markersData: Marker[] = [
+  {
+    id: 1,
+    latitude: 35.662346819815305,
+    longitude: 139.6991631860567,
+  },
+  {
+    id: 2,
+    latitude: 35.6640117157159,
+    longitude: 139.6993884915927,
+  },
+  {
+    id: 3,
+    latitude: 35.663218497391604,
+    longitude: 139.69760750497448,
+  },
+  {
+    id: 4,
+    latitude: 35.661762790515354,
+    longitude: 139.69710324972715,
+  },
+  {
+    id: 5,
+    latitude: 35.66078649319146,
+    longitude: 139.69840143876814,
+  },
+];
 
-  // 例として東京タワーを中央に表示
-  const origin = {latitude: 35.6585805, longitude: 139.742858};
+const friends: Friend[] = [
+	{
+		id: 1,
+		latitude: 35.658876,
+		longitude: 139.702567,
+		icon: { uri: "https://cdn-icons-png.flaticon.com/512/1077/1077114.png" },
+	}
+];
+
+export default function MapSample() {
+  // 現在地
+  const [initRegion, setInitRegion] = useState<Region | null>(null);
+  // マーカー
+  const [markers, setMarkers] = useState<Marker[]>([]);
+  // エラーメッセージ
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    // Web環境ではreact-native-mapsをインポートしない
-    if (Platform.OS !== 'web') {
-      import('react-native-maps').then((maps) => {
-        setMapView(maps.default);
-        setPROVIDER_GOOGLE(maps.PROVIDER_GOOGLE);
-      });
-    }
+    // 位置情報のアクセス許可を取り、現在地情報を取得する
+    const getCurrentLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("位置情報へのアクセスが拒否されました");
+        return;
+      }
+
+      try {
+        const location = await Location.getCurrentPositionAsync({});
+        // 緯度・経度はgetCurrentPositionAsyncで取得した緯度・経度
+        // 緯度・経度の表示範囲の縮尺は固定値にしてます
+        setInitRegion({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
+      } catch (error) {
+        console.error("現在地情報取得エラー：", error);
+      }
+    };
+    getCurrentLocation();
+    // 固定で設定したマーカー情報を設定する
+    setMarkers(markersData);
   }, []);
 
-  const renderMap = () => {
-    if (Platform.OS === 'web') {
-      return (
-        <View style={styles.webMapPlaceholder}>
-          <Text style={styles.webMapText}>
-            地図機能はモバイルアプリでご利用ください
-          </Text>
-          <Text style={styles.webMapSubText}>
-            位置: 東京タワー周辺
-          </Text>
-          <Text style={styles.webMapSubText}>
-            緯度: {origin.latitude}, 経度: {origin.longitude}
-          </Text>
-        </View>
-      );
-    }
-
-    if (!MapView) {
-      return (
-        <View style={styles.webMapPlaceholder}>
-          <Text style={styles.webMapText}>地図を読み込み中...</Text>
-        </View>
-      );
-    }
-
-    return (
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={{
-          latitude: origin.latitude,
-          longitude: origin.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-      >
-      </MapView>
-    );
-  };
-
   return (
-    <View style={styles.container}>
-      <StatusBar style="auto" />
-      {renderMap()}
-    </View>
+    <>
+      <View style={styles.container}>
+        {errorMsg ? (
+          <Text>{errorMsg}</Text>
+        ) : (
+          // MapViewではstyle設定は必須です。
+          // （設定しないとMAP表示されません）
+          // regionはinitRegion(Region型)を設定
+          // showsUserLocationはtrueにすると、現在地が青い点で表示します。
+          // providerをgoogleにするとiOSでもGoogleMapで表示してくれます。
+          // （デフォルトはapple map）
+          <MapView
+            style={styles.mapContainer}
+            region={initRegion || undefined}
+            showsUserLocation={true}
+            provider="google"
+          >
+            {markers.map((marker) => (
+              // key指定は必須。
+              // coordinateは緯度・経度を設定する。
+              // pinColorでマーカーの色指定可能
+              <Marker
+                key={marker.id}
+                coordinate={{
+                  latitude: marker.latitude,
+                  longitude: marker.longitude,
+                }}
+                pinColor="orange"
+              ></Marker>
+            ))}
+						{friends.map((friend) => (
+              <Marker
+                key={friend.id}
+                coordinate={{
+                  latitude: friend.latitude,
+                  longitude: friend.longitude,
+                }}
+              >
+								<Image
+									source={friend.icon}
+									style={{ width: 40, height: 40 }}
+								/>
+							</Marker>
+            ))}
+          </MapView>
+        )}
+      </View>
+    </>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  webMapPlaceholder: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: '#f0f0f0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    margin: 16,
-  },
-  webMapText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  webMapSubText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+  mapContainer: {
+    width: "100%",
+    height: "100%",
   },
 });
