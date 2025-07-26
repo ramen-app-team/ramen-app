@@ -7,6 +7,7 @@ from .views import (
     FollowingListView,
     FollowerListView,
     PendingFollowRequestListView,
+    IkitaiStatusView,
 )
 
 urlpatterns = [
@@ -29,4 +30,7 @@ urlpatterns = [
 
     # 自分への保留中のフォローリクエストの一覧 (GET /api/relationships/pending-requests/)
     path('pending-requests/', PendingFollowRequestListView.as_view(), name='pending-follow-requests'),
+
+    # 「ラーメンイキタイ」状態の取得(GET)/ON(POST)/OFF(DELETE)
+    path('ikitai/', IkitaiStatusView.as_view(), name='ikitai-status'),
 ]

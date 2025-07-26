@@ -3,10 +3,11 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError # unique_togetherエラーを捕捉するため
+from django.db import IntegrityError
+from django.utils import timezone
 
-from .models import UserRelationship
-from .serializers import UserRelationshipSerializer, UserSerializer, FollowRequestSerializer, FollowApprovalSerializer
+from .models import UserRelationship, IkitaiStatus
+from .serializers import UserRelationshipSerializer, UserSerializer, FollowRequestSerializer, FollowApprovalSerializer, IkitaiStatusSerializer, IkitaiStatusCreateSerializer
 
 User = get_user_model()
 
@@ -180,3 +181,68 @@ class PendingFollowRequestListView(generics.ListAPIView):
             followed=self.request.user,
             status=UserRelationship.STATUS_PENDING
         ).select_related('follower')
+
+
+# --- 「ラーメンイキタイ」機能 ---
+
+class IkitaiStatusView(generics.GenericAPIView):
+    """
+    「ラーメンイキタイ」状態の取得(GET)、作成/更新(POST)、削除(DELETE)を行うAPI。
+    エンドポイント: /api/relationships/ikitai/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return IkitaiStatusCreateSerializer
+        return IkitaiStatusSerializer
+
+    def get_object(self):
+        try:
+            # ログインユーザーのIkitaiStatusオブジェクトを取得
+            return IkitaiStatus.objects.get(user=self.request.user)
+        except IkitaiStatus.DoesNotExist:
+            return None
+
+    def get(self, request, *args, **kwargs):
+        """自分の「ラーメンイキタイ」状態を取得する"""
+        instance = self.get_object()
+        if instance is None:
+            return Response({'detail': '「ラーメンイキタイ」状態ではありません。'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        """「ラーメンイキタイ」状態をONにする (作成または更新)"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        now = timezone.now()
+        duration_type = data['duration_type']
+
+        if duration_type == 'now':
+            expires_at = now + timezone.timedelta(hours=1)
+        elif duration_type == 'lunch':
+            expires_at = now.replace(hour=14, minute=0, second=0, microsecond=0)
+            if now > expires_at: # 既に過ぎていたら明日にする
+                expires_at += timezone.timedelta(days=1)
+        elif duration_type == 'dinner':
+            expires_at = now.replace(hour=22, minute=0, second=0, microsecond=0)
+            if now > expires_at: # 既に過ぎていたら明日にする
+                expires_at += timezone.timedelta(days=1)
+
+        ikitai_status, created = IkitaiStatus.objects.update_or_create(
+            user=request.user,
+            defaults={'latitude': data['latitude'], 'longitude': data['longitude'], 'expires_at': expires_at}
+        )
+
+        response_serializer = IkitaiStatusSerializer(ikitai_status)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    def delete(self, request, *args, **kwargs):
+        """「ラーメンイキタイ」状態をOFFにする (削除)"""
+        instance = self.get_object()
+        if instance:
+            instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
