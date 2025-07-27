@@ -17,9 +17,13 @@ type RamenShop = {
 
 type Friend = {
 	id: number,
+	name: string,
 	latitude: number,
 	longitude: number,
 	icon: ImageURISource,
+	ramen_shop_id: number, // ラーメン店ID（オプション）
+	count?: number, // 訪問回数（オプション）
+	thoughts?: string, // フレンドの感想（オプション）
 }
 
 type MyHistory = {
@@ -75,9 +79,13 @@ const ramenShops: RamenShop[] = [
 const friends: Friend[] = [
 	{
 		id: 1,
+		name: "友達A",
 		latitude: 35.658876,
 		longitude: 139.702567,
 		icon: { uri: "https://cdn-icons-png.flaticon.com/512/1077/1077114.png" },
+		ramen_shop_id: 1, // らーめん山田家
+		count: 1,
+		thoughts: "ここのチャーシューは最高！",
 	}
 ];
 
@@ -112,6 +120,16 @@ export default function MapSample() {
     const history = myHistory.find(h => h.ramen_shop_id === shopId);
     return history ? history.count : 0;
   };
+
+  // ラーメン店IDから友達の感想を取得する関数
+  const getFriendThoughts = (shopId: number): string | null => {
+    const friend = friends.find(f => f.ramen_shop_id === shopId && f.thoughts);
+    return friend?.thoughts || null;
+  };
+	const getFriendName = (shopId: number): string | null => {
+		const friend = friends.find(f => f.ramen_shop_id === shopId && f.thoughts);
+		return friend?.name || null;
+	};
 
   useEffect(() => {
     // 位置情報のアクセス許可を取り、現在地情報を取得する
@@ -159,7 +177,7 @@ export default function MapSample() {
             showsUserLocation={true}
             provider="google"
           >
-            {markers.map((marker) => (
+            {ramenShops.map((marker) => (
               // key指定は必須。
               // coordinateは緯度・経度を設定する。
               // Calloutでマーカー横に情報を表示
@@ -182,7 +200,7 @@ export default function MapSample() {
                               key={index}
                               style={[
                                 styles.ramenBowl,
-                                { bottom: index * 3 } // 縦に3pxずつずらして重ねる
+                                { bottom: index * 5 } // 縦に5pxずつずらして重ねる
                               ]}
                             >
                               🍜
@@ -194,11 +212,17 @@ export default function MapSample() {
                     <Text style={styles.calloutRating}>⭐ {marker.rating}/5.0</Text>
                     <Text style={styles.calloutDescription}>{marker.description}</Text>
                     <Text style={styles.visitedText}>訪問回数: {getVisitCount(marker.id)}</Text>
+                    {getFriendThoughts(marker.id) && (
+                      <View style={styles.friendThoughtsContainer}>
+                        <Text style={styles.friendThoughtsLabel}>{getFriendName(marker.id)}の感想:</Text>
+                        <Text style={styles.friendThoughts}>{getFriendThoughts(marker.id)}</Text>
+                      </View>
+                    )}
                   </View>
                 </Callout>
               </Marker>
             ))}
-						{friends.map((friend) => (
+						{/* {friends.map((friend) => (
               <Marker
                 key={friend.id}
                 coordinate={{
@@ -208,17 +232,19 @@ export default function MapSample() {
               >
 								<Callout>
 									<View style={styles.calloutContainer}>
-										<Text style={styles.calloutTitle}>Friend {friend.id}</Text>
+										<Text style={styles.calloutTitle}>{friend.name}</Text>
 										<Text style={styles.calloutDescription}>Latitude: {friend.latitude}</Text>
 										<Text style={styles.calloutDescription}>Longitude: {friend.longitude}</Text>
 									</View>
 								</Callout>
-								<Image
-									source={friend.icon}
-									style={{ width: 40, height: 40 }}
-								/>
+								<View>
+									<Image
+										source={friend.icon}
+										style={{ width: 40, height: 40 }}
+									/>
+								</View>
 							</Marker>
-            ))}
+            ))} */}
           </MapView>
         )}
       </View>
@@ -288,5 +314,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
     position: "absolute",
     bottom: 0,
+  },
+  friendThoughtsContainer: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 5,
+    borderLeftWidth: 3,
+    borderLeftColor: "#007bff",
+  },
+  friendThoughtsLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#007bff",
+    marginBottom: 3,
+  },
+  friendThoughts: {
+    fontSize: 14,
+    color: "#333",
+    fontStyle: "italic",
   },
 });
