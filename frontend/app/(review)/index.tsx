@@ -45,9 +45,9 @@ interface UserInfo {
   avatar?: string;
 }
 
-// レビューデータの型定義
+// フロントエンド用の完全なレビューデータの型定義
 interface ReviewData {
-  id?: string;
+  id?: number;
   restaurantId: string;
   restaurantName: string;
   userId: string;
@@ -58,10 +58,21 @@ interface ReviewData {
   soupRichness: string;
   review: string;
   photo: string;
-  // 投稿日時(どっちか好みの形式で)
   createdAt: Date;
   createdDate: string; // YYYY-MM-DD形式
   createdTime: string; // HH:MM形式
+}
+
+// バックエンドとのやり取り用の型定義（現在のRamenLogモデルに合わせる）
+interface ReviewDataForAPI {
+  id?: number;
+  shop_name: string;
+  user: number; // ユーザーID
+  ordered_item: string;
+  noodle_hardness: string;
+  toppings?: string;
+  rating: number;
+  visited_at: string; // ISO 8601形式の日時文字列
 }
 
 export default function ReviewScreen() {
@@ -105,6 +116,8 @@ export default function ReviewScreen() {
   const [rating, setRating] = useState(5);
   const [noodleHardness, setNoodleHardness] = useState<string>("");
   const [soupRichness, setSoupRichness] = useState<string>("");
+  const [selectedToppings, setSelectedToppings] = useState<string[]>([]);
+  const [isToppingsOpen, setIsToppingsOpen] = useState(false);
   const [review, setReview] = useState("");
   const [photoUri, setPhotoUri] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -164,7 +177,7 @@ export default function ReviewScreen() {
 
     setIsSubmitting(true);
     try {
-      // レビューデータを作成
+      // フロントエンド用の完全なレビューデータを作成
       const now = new Date();
       const reviewData: ReviewData = {
         restaurantId: restaurantInfo.id,
@@ -187,8 +200,20 @@ export default function ReviewScreen() {
           .padStart(2, "0")}`, // HH:MM形式
       };
 
+      // バックエンドとのやり取り用のデータを作成
+      const apiData: ReviewDataForAPI = {
+        shop_name: restaurantInfo.name,
+        user: parseInt(userInfo.id),
+        ordered_item: menuName,
+        noodle_hardness: noodleHardness,
+        toppings: selectedToppings.join(", "),
+        rating,
+        visited_at: now.toISOString(),
+      };
+
       // TODO: レビュー投稿API実装
-      console.log("レビュー投稿:", reviewData);
+      console.log("フロントエンド用データ:", reviewData);
+      console.log("バックエンド用データ:", apiData);
 
       Alert.alert("成功", "レビューを投稿しました！");
       // フォームをリセット
@@ -196,6 +221,7 @@ export default function ReviewScreen() {
       setRating(5);
       setNoodleHardness("");
       setSoupRichness("");
+      setSelectedToppings([]);
       setReview("");
       setPhotoUri("");
     } catch (error) {
@@ -273,6 +299,66 @@ export default function ReviewScreen() {
             </Button>
           ))}
         </View>
+      </View>
+    );
+  };
+
+  const renderToppings = () => {
+    const toppingOptions = [
+      "チャーシュー",
+      "メンマ",
+      "ネギ",
+      "たまご",
+      "海苔",
+      "トウモロコシ",
+      "もやし",
+      "バター",
+      "ほうれん草",
+    ];
+
+    const toggleTopping = (topping: string) => {
+      setSelectedToppings((prev) =>
+        prev.includes(topping)
+          ? prev.filter((t) => t !== topping)
+          : [...prev, topping]
+      );
+    };
+
+    return (
+      <View style={styles.optionContainer}>
+        <View style={styles.toppingsHeader}>
+          <ThemedText type="defaultSemiBold" style={styles.subSectionTitle}>
+            トッピング
+          </ThemedText>
+          <IconButton
+            icon={isToppingsOpen ? "minus-circle" : "plus-circle"}
+            size={24}
+            iconColor="#007AFF"
+            style={styles.toppingsToggleIcon}
+            onPress={() => setIsToppingsOpen(!isToppingsOpen)}
+          />
+        </View>
+
+        {isToppingsOpen && (
+          <View style={styles.toppingsContainer}>
+            {toppingOptions.map((topping) => (
+              <Chip
+                key={topping}
+                selected={selectedToppings.includes(topping)}
+                onPress={() => toggleTopping(topping)}
+                style={styles.toppingChip}
+                textStyle={styles.toppingChipText}
+              >
+                {topping}
+              </Chip>
+            ))}
+          </View>
+        )}
+        {selectedToppings.length > 0 && (
+          <ThemedText style={styles.selectedToppingsText}>
+            選択中: {selectedToppings.join(", ")}
+          </ThemedText>
+        )}
       </View>
     );
   };
@@ -377,6 +463,7 @@ export default function ReviewScreen() {
           </ThemedText>
           {renderNoodleHardness()}
           {renderSoupRichness()}
+          {renderToppings()}
 
           {/* 写真 */}
           <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
@@ -620,5 +707,35 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 16,
     color: "#333",
+  },
+  toppingsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 8,
+  },
+  toppingChip: {
+    marginBottom: 4,
+  },
+  toppingChipText: {
+    fontSize: 14,
+  },
+  selectedToppingsText: {
+    fontSize: 14,
+    color: "#666",
+    fontStyle: "italic",
+    marginTop: 4,
+  },
+  toppingsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  toppingsToggleButton: {
+    padding: 4,
+  },
+  toppingsToggleIcon: {
+    margin: 0,
   },
 });
