@@ -1,14 +1,17 @@
 # Node.jsベースイメージ
 FROM node:24-alpine
 
+# pnpmをグローバルにインストール
+RUN npm install -g pnpm @expo/cli @expo/ngrok
+
 # 作業ディレクトリを設定
 WORKDIR /app
 
-# package.jsonとyarn.lock/package-lock.jsonをコピー
-COPY package.json yarn.lock* ./
+# package.jsonとpnpm-lock.yamlをコピー
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # 依存関係をインストール
-RUN npm install
+RUN pnpm install
 
 # アプリケーションコードをコピー
 COPY . .

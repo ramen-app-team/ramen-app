@@ -3,15 +3,15 @@ services:
   # Django バックエンドサービス
   backend:
     build:
-      context: ./backend
+      context: ./backend # backendディレクトリのDockerfileを使用
       dockerfile: Dockerfile
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:8000 # Djangoサーバーを起動
     volumes:
-      - ./backend:/app
+      - ./backend:/app # ホストのbackendディレクトリをコンテナの/appにマウント
     ports:
-      - "8000:8000"
+      - "8000:8000" # ホストの8000番ポートをコンテナの8000番ポートにマッピング
     env_file:
-      - .env.dev
+      - .env.dev # 環境変数を設定
     depends_on:
       db:
         condition: service_healthy # <-- ここを修正
@@ -36,11 +36,10 @@ services:
 
   # React Native フロントエンドサービス
   frontend:
-    # ... frontend サービスの設定は省略 (変更なし)
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    command: npm run start
+    command: pnpm expo start
     volumes:
       - ./frontend:/app
       - /app/node_modules
