@@ -211,7 +211,28 @@ export default function ReviewScreen() {
         visited_at: now.toISOString(),
       };
 
-      // TODO: レビュー投稿API実装
+      // バックエンドAPIに投稿
+      const response = await fetch(
+        "http://localhost:8000/api/ramen/ramenlog/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // TODO: 認証トークンを追加
+            // 'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(apiData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("API Error:", errorData);
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("API Response:", result);
       console.log("フロントエンド用データ:", reviewData);
       console.log("バックエンド用データ:", apiData);
 
@@ -225,6 +246,7 @@ export default function ReviewScreen() {
       setReview("");
       setPhotoUri("");
     } catch (error) {
+      console.error("Submit Error:", error);
       Alert.alert("エラー", "投稿に失敗しました");
     } finally {
       setIsSubmitting(false);
