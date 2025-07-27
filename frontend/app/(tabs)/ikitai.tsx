@@ -1,7 +1,9 @@
+// frontend/app/RamenIkitaiScreen.tsx (修正後)
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, Switch, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
-import { TimeSlot, IkitaiFriend } from '@/types';
-import { updateMyIkitaiStatus, fetchIkitaiFriends } from '@/api';
+// import { TimeSlot, IkitaiFriend } from '@/types'; // この行を削除
+import { updateMyIkitaiStatus, fetchIkitaiFriends, TimeSlot, IkitaiFriend } from '@/api'; // ここからインポート
 import * as Location from 'expo-location';
 
 const TIME_SLOTS: { key: TimeSlot; label: string }[] = [
@@ -120,7 +122,7 @@ export default function RamenIkitaiScreen() {
             <View style={styles.timeSlotSelector}>
               {TIME_SLOTS.map(({ key, label }) => (
                 <TouchableOpacity
-                  key={key}
+                  key={String(key)}
                   style={[
                     styles.timeSlotButton, 
                     selectedTimeSlot === key && styles.timeSlotButtonSelected

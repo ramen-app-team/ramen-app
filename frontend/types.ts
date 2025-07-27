@@ -1,4 +1,4 @@
-export type TimeSlot = 'now' | 'lunch' | 'night';
+/*export type TimeSlot = 'now' | 'lunch' | 'night';
 
 export interface IkitaiFriend {
   userId: string;
@@ -6,4 +6,4 @@ export interface IkitaiFriend {
   userIconUrl: string;
   timeSlot: TimeSlot;
   municipality: string;
-}
+}*/
